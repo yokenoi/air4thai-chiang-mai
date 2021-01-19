@@ -17,7 +17,7 @@ There are 6 pollution measured by the station.
 
 The API also provide AQI data which the original API does not.
 
-### Latest Data
+## Latest Data
 
 Path:
 > `/api/latest`
@@ -48,7 +48,7 @@ If `lat` and `long` are not specified, the data of 35t (Goverance center) statio
 
 The database will be automatically updated if the latest data is requested.
 
-### Querying the data
+## Querying the data
 
 Path:
 > `/api/query`
