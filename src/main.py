@@ -133,10 +133,9 @@ def get_data(lat=18.838311, long=98.974234):
         engine.commit()
 
         sql = '''select PM25, PM10, CO, O3, NO2, SO2
-                         from history 
-                         where DATETIMEDATA = (
-                            select max(DATETIMEDATA) from history
-                         );'''
+                 from history 
+                 where DATETIMEDATA = (select max(DATETIMEDATA) from history);
+                 '''
 
         if any(map(lambda row: all(map(lambda x: x is None, row)), engine.execute(sql).fetchall())):
             engine.execute('delete from history where DATETIMEDATA = (select max(DATETIMEDATA) from history);')
