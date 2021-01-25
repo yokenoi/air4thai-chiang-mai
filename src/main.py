@@ -162,13 +162,13 @@ def get_data(lat=18.838311, long=98.974234):
     engine.close()
 
     return {
-        'PM25': int(PM25),
-        'PM10': int(PM25),
+        'PM25': int(PM25) if PM25 else None,
+        'PM10': int(PM10) if PM10 else None,
         'CO': CO,
-        'O3': int(O3),
-        'NO2': int(NO2),
-        'SO2': int(SO2),
-        'AQI': int(AQI)
+        'O3': int(O3) if O3 else None,
+        'NO2': int(NO2) if NO2 else None,
+        'SO2': int(SO2) if SO2 else None,
+        'AQI': int(AQI) if AQI else None
     }
 
 

@@ -1,5 +1,5 @@
 # set base image (host OS)
-FROM python:3.7-slim
+FROM python:3.7-alpine
 
 # set the working directory in the container
 WORKDIR /app
