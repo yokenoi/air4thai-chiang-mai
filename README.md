@@ -98,3 +98,9 @@ Result:
 
 Return the query of the data by the parameter provided in JSON format. The parameter can be omitted.
 
+## Download Database
+
+Path:
+> `api/database`
+
+Download `air4thai.db` file.

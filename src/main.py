@@ -175,6 +175,7 @@ def get_data(lat=18.838311, long=98.974234):
 app = Flask(__name__)
 
 
+# GET latest data
 @app.route('/api/latest', methods=['GET'])
 def latest():
     query_parameters = request.args
@@ -187,6 +188,7 @@ def latest():
     return jsonify(data)
 
 
+# Query Data
 @app.route('/api/query', methods=['GET'])
 def query():
     query_parameters = request.args
@@ -229,6 +231,12 @@ def query():
     data = [json.loads(df[col].to_json()) for col in df]
 
     return jsonify(data)
+
+
+# GET database
+@app.route('/api/database', methods=['GET'])
+def database():
+    return  send_file('air4thai.db', as_attachment=True)
 
 
 app.run(debug=True, host='0.0.0.0')
