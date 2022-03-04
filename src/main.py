@@ -16,7 +16,8 @@ def get_data(lat=18.838311, long=98.974234):
     engine = sqlite3.connect(
         f'{pathlib.Path(__file__).parent.resolve()}/air4thai.db')
 
-    latest = engine.execute("select max(datetime(DATETIMEDATA, '+1 hours')) from history").fetchall()[0][0]
+    latest = engine.execute(
+        "select max(datetime(DATETIMEDATA, '+1 hours')) from history").fetchall()[0][0]
     sdate, stime = latest[:10], latest[11:13]
     now = str(datetime.now() + timedelta(hours=7))
     edate, etime = now[:10], now[11:13]
@@ -29,7 +30,7 @@ def get_data(lat=18.838311, long=98.974234):
               f'&type=hr&sdate={sdate}&edate={edate}&stime={stime}&etime={etime}'
 
         try:
-            log.debug('HTTP GET {url}')
+            log.debug(f'HTTP GET {url}')
             response = requests.get(url)
         except:
             log.error("Can't fetch data from Air4thai API.")
@@ -43,8 +44,10 @@ def get_data(lat=18.838311, long=98.974234):
             station_data = pd.DataFrame(station.get('data'))
             station_data['stationID'] = station.get('stationID')
             data.append(station_data)
-        data = data[0].append(data[1]).sort_values(['DATETIMEDATA', 'stationID'])
-        data.to_sql(con=engine, name='history', if_exists='append', index=False)
+        data = data[0].append(data[1]).sort_values(
+            ['DATETIMEDATA', 'stationID'])
+        data.to_sql(con=engine, name='history',
+                    if_exists='append', index=False)
 
         sql = f'''
             with Average as (
@@ -148,7 +151,8 @@ def get_data(lat=18.838311, long=98.974234):
                  '''
 
         if any(map(lambda row: all(map(lambda x: x is None, row)), engine.execute(sql).fetchall())):
-            engine.execute('delete from history where DATETIMEDATA = (select max(DATETIMEDATA) from history);')
+            engine.execute(
+                'delete from history where DATETIMEDATA = (select max(DATETIMEDATA) from history);')
             engine.commit()
     except KeyError:
         pass
@@ -168,7 +172,8 @@ def get_data(lat=18.838311, long=98.974234):
                            where distance = (select min(distance) from cte));
     '''
 
-    station, dt, CO, NO2, SO2, O3, PM10, PM25, AQI = engine.execute(sql).fetchall()[0]
+    station, dt, CO, NO2, SO2, O3, PM10, PM25, AQI = engine.execute(sql).fetchall()[
+        0]
     engine.close()
 
     return {
@@ -228,10 +233,12 @@ def query():
     else:
         edatetime = None
     if station:
-        station = '(' + ','.join(["'" + s + "'" for s in station.split(',')]) + ')'
+        station = '(' + ','.join(["'" + s +
+                                  "'" for s in station.split(',')]) + ')'
         station = f"stationID in {station}"
     parameter = f'stationID,DATETIMEDATA,{parameter}' if parameter else '*'
-    condition = list(filter(lambda c: c is not None, [sdatetime, edatetime, station]))
+    condition = list(filter(lambda c: c is not None, [
+                     sdatetime, edatetime, station]))
     condition = 'where ' + ' and '.join(condition) if condition else ''
 
     sql = f'select {parameter} from history {condition}'
@@ -246,7 +253,7 @@ def query():
 # GET database
 @app.route('/api/database', methods=['GET'])
 def database():
-    return  send_file('air4thai.db', as_attachment=True)
+    return send_file('air4thai.db', as_attachment=True)
 
 
 app.run(debug=True, host='0.0.0.0')
