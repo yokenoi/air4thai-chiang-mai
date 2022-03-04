@@ -4,10 +4,12 @@ import json
 import pandas as pd
 import requests
 import sqlite3
+import pathlib
 
 
 def get_data(lat=18.838311, long=98.974234):
-    engine = sqlite3.connect('air4thai.db')
+    engine = sqlite3.connect(
+        f'{pathlib.Path(__file__).parent.resolve()}/air4thai.db')
 
     latest = engine.execute("select max(datetime(DATETIMEDATA, '+1 hours')) from history").fetchall()[0][0]
     sdate, stime = latest[:10], latest[11:13]
