@@ -1,10 +1,15 @@
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, abort
 import json
 import pandas as pd
 import requests
 import sqlite3
 import pathlib
+from logbook import Logger, StreamHandler
+import sys
+StreamHandler(sys.stdout).push_application()
+
+log = Logger('main.py')
 
 
 def get_data(lat=18.838311, long=98.974234):
@@ -23,11 +28,14 @@ def get_data(lat=18.838311, long=98.974234):
         url = f'http://air4thai.pcd.go.th/webV2/history/api/data.php?stationID=35t,36t&param=PM25,PM10,O3,CO,NO2,SO2' \
               f'&type=hr&sdate={sdate}&edate={edate}&stime={stime}&etime={etime}'
 
-        while True:
+        try:
+            log.debug('HTTP GET {url}')
             response = requests.get(url)
-            if response.status_code == 200:
+        except:
+            log.error("Can't fetch data from Air4thai API.")
+            abort(500)
+
                 json = response.json()
-                break
 
         data = []
 
