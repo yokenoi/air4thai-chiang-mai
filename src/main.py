@@ -35,7 +35,7 @@ def get_data(lat=18.838311, long=98.974234):
             log.error("Can't fetch data from Air4thai API.")
             abort(500)
 
-                json = response.json()
+        json = response.json()
 
         data = []
 
