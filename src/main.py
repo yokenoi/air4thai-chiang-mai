@@ -5,11 +5,12 @@ import pandas as pd
 import requests
 import sqlite3
 import pathlib
-from logbook import Logger, StreamHandler
+from logbook import Logger, StreamHandler, DEBUG, INFO
 import sys
 StreamHandler(sys.stdout).push_application()
 
 log = Logger('main.py')
+log.level = INFO
 
 
 def get_data(lat=18.838311, long=98.974234):
@@ -20,18 +21,28 @@ def get_data(lat=18.838311, long=98.974234):
         "select max(datetime(DATETIMEDATA, '+1 hours')) from history").fetchall()[0][0]
     sdate, stime = latest[:10], latest[11:13]
     now = str(datetime.now() + timedelta(hours=7))
+    # e.g., given it is 2022-03-01 12:30 now. Thus, edate = '2022-03-01', etime = '12'.
     edate, etime = now[:10], now[11:13]
 
     try:
         if sdate == edate and stime == etime:
             raise KeyError
 
-        url = f'http://air4thai.pcd.go.th/webV2/history/api/data.php?stationID=35t,36t&param=PM25,PM10,O3,CO,NO2,SO2' \
-              f'&type=hr&sdate={sdate}&edate={edate}&stime={stime}&etime={etime}'
+        url = 'http://air4thai.pcd.go.th/webV2/history/api/data.php'
+
+        params = {
+            'stationID': '35t,36t',
+            'param': 'PM25,PM10,O3,CO,NO2,SO2',
+            'type': 'hr',
+            'sdate': sdate,
+            'stime': stime,
+            'edate': edate,
+            'etime': etime,
+        }
 
         try:
-            log.debug(f'HTTP GET {url}')
-            response = requests.get(url)
+            log.debug(f'HTTP GET {url} with params {params}')
+            response = requests.get(url, params=params)
         except:
             log.error("Can't fetch data from Air4thai API.")
             abort(500)
