@@ -1,31 +1,53 @@
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, abort
 import json
 import pandas as pd
 import requests
 import sqlite3
+import pathlib
+from logbook import Logger, StreamHandler, DEBUG, INFO
+import sys
+StreamHandler(sys.stdout).push_application()
+
+log = Logger('main.py')
+log.level = INFO
 
 
 def get_data(lat=18.838311, long=98.974234):
-    engine = sqlite3.connect('air4thai.db')
+    engine = sqlite3.connect(
+        f'{pathlib.Path(__file__).parent.resolve()}/air4thai.db')
 
-    latest = engine.execute("select max(datetime(DATETIMEDATA, '+1 hours')) from history").fetchall()[0][0]
+    latest = engine.execute(
+        "select max(datetime(DATETIMEDATA, '+1 hours')) from history").fetchall()[0][0]
     sdate, stime = latest[:10], latest[11:13]
     now = str(datetime.now() + timedelta(hours=7))
+    # e.g., given it is 2022-03-01 12:30 now. Thus, edate = '2022-03-01', etime = '12'.
     edate, etime = now[:10], now[11:13]
 
     try:
         if sdate == edate and stime == etime:
             raise KeyError
 
-        url = f'http://air4thai.pcd.go.th/webV2/history/api/data.php?stationID=35t,36t&param=PM25,PM10,O3,CO,NO2,SO2' \
-              f'&type=hr&sdate={sdate}&edate={edate}&stime={stime}&etime={etime}'
+        url = 'http://air4thai.pcd.go.th/webV2/history/api/data.php'
 
-        while True:
-            response = requests.get(url)
-            if response.status_code == 200:
-                json = response.json()
-                break
+        params = {
+            'stationID': '35t,36t',
+            'param': 'PM25,PM10,O3,CO,NO2,SO2',
+            'type': 'hr',
+            'sdate': sdate,
+            'stime': stime,
+            'edate': edate,
+            'etime': etime,
+        }
+
+        try:
+            log.debug(f'HTTP GET {url} with params {params}')
+            response = requests.get(url, params=params)
+        except:
+            log.error("Can't fetch data from Air4thai API.")
+            abort(500)
+
+        json = response.json()
 
         data = []
 
@@ -33,8 +55,10 @@ def get_data(lat=18.838311, long=98.974234):
             station_data = pd.DataFrame(station.get('data'))
             station_data['stationID'] = station.get('stationID')
             data.append(station_data)
-        data = data[0].append(data[1]).sort_values(['DATETIMEDATA', 'stationID'])
-        data.to_sql(con=engine, name='history', if_exists='append', index=False)
+        data = data[0].append(data[1]).sort_values(
+            ['DATETIMEDATA', 'stationID'])
+        data.to_sql(con=engine, name='history',
+                    if_exists='append', index=False)
 
         sql = f'''
             with Average as (
@@ -138,7 +162,8 @@ def get_data(lat=18.838311, long=98.974234):
                  '''
 
         if any(map(lambda row: all(map(lambda x: x is None, row)), engine.execute(sql).fetchall())):
-            engine.execute('delete from history where DATETIMEDATA = (select max(DATETIMEDATA) from history);')
+            engine.execute(
+                'delete from history where DATETIMEDATA = (select max(DATETIMEDATA) from history);')
             engine.commit()
     except KeyError:
         pass
@@ -158,7 +183,8 @@ def get_data(lat=18.838311, long=98.974234):
                            where distance = (select min(distance) from cte));
     '''
 
-    station, dt, CO, NO2, SO2, O3, PM10, PM25, AQI = engine.execute(sql).fetchall()[0]
+    station, dt, CO, NO2, SO2, O3, PM10, PM25, AQI = engine.execute(sql).fetchall()[
+        0]
     engine.close()
 
     return {
@@ -218,10 +244,12 @@ def query():
     else:
         edatetime = None
     if station:
-        station = '(' + ','.join(["'" + s + "'" for s in station.split(',')]) + ')'
+        station = '(' + ','.join(["'" + s +
+                                  "'" for s in station.split(',')]) + ')'
         station = f"stationID in {station}"
     parameter = f'stationID,DATETIMEDATA,{parameter}' if parameter else '*'
-    condition = list(filter(lambda c: c is not None, [sdatetime, edatetime, station]))
+    condition = list(filter(lambda c: c is not None, [
+                     sdatetime, edatetime, station]))
     condition = 'where ' + ' and '.join(condition) if condition else ''
 
     sql = f'select {parameter} from history {condition}'
@@ -236,7 +264,7 @@ def query():
 # GET database
 @app.route('/api/database', methods=['GET'])
 def database():
-    return  send_file('air4thai.db', as_attachment=True)
+    return send_file('air4thai.db', as_attachment=True)
 
 
 app.run(debug=True, host='0.0.0.0')
